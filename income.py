@@ -11,10 +11,13 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QDoubleValidator
 from datetime import date
+from PyQt5.QtWidgets import QFileDialog, QMainWindow
+import uuid
 
 
-class Ui_MainWindow(object):
+class Ui_MainWindow(QMainWindow):
     def setupUi(self, MainWindow):
+        self.path = ""
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(344, 289)
         self.date = date.today()
@@ -48,6 +51,13 @@ class Ui_MainWindow(object):
         self.label_date = QtWidgets.QLabel(self.centralwidget)
         self.label_date.setGeometry(QtCore.QRect(60, 90, 47, 13))
         self.label_date.setObjectName("label_date")
+        self.button_choose = QtWidgets.QPushButton(self.centralwidget)
+        self.button_choose.setGeometry(QtCore.QRect(50, 200, 91, 31))
+        self.button_choose.setObjectName("button_choose")
+        self.button_choose.clicked.connect(self.choose_directory)
+        self.label_path = QtWidgets.QLabel(self.centralwidget)
+        self.label_path.setGeometry(QtCore.QRect(60, 170, 47, 13))
+        self.label_path.setObjectName("label")
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -64,16 +74,151 @@ class Ui_MainWindow(object):
         self.select_currency.setItemText(2, _translate("MainWindow", "EUR"))
         self.label_currency.setText(_translate("MainWindow", "Currency"))
         self.label_date.setText(_translate("MainWindow", "Date"))
+        self.button_choose.setText(_translate("MainWindow", "Choose directory"))
+
+    def choose_directory(self):
+        self.path = QFileDialog.getExistingDirectory(self, "Choose directory", "C:/",
+                                                     QFileDialog.ShowDirsOnly
+                                                     | QFileDialog.DontResolveSymlinks)
+        self.label_path.setText(f"File will be saved in {self.path}")
+        self.label_path.adjustSize()
 
     def save_file(self):
-        file = open("saved.txt", "w")
-        file.write(f"{self.input_amount.text()} {self.select_currency.currentText()} on "
-                   f"{self.input_date.date().toPyDate()} {self.date}")
+        acct_svcr_ref = str(uuid.uuid4())
+        amount = self.input_amount.text()
+        currency = self.select_currency.currentText()
+        date = self.input_date.date().toPyDate()
+        match currency:
+            case "USD":
+                bank_account = "52495788"
+            case "GBP":
+                bank_account = "43975347"
+            case "EUR":
+                bank_account = "52588299"
+        file = open(f"{self.path}/incoming_internal_transfer_{date}_{amount}_{currency}.xml", "w")
+        file.write(f'<?xml version="1.0" encoding="UTF-8"?> \n'
+                   f'<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.052.001.02">\n'
+                   f'<BkToCstmrAcctRptV02>\n'
+                   f'<GrpHdr>\n'
+                   f'<MsgId>10929926</MsgId>\n'
+                   f'<CreDtTm>{date} 10:51:25</CreDtTm>\n'
+                   f'<MsgRcpt>\n'
+                   f'<Nm>STENN INTERNATIONAL LIMITED</Nm>\n'
+                   f'<PstlAdr>\n'
+                   f'<AdrTp>ADDR</AdrTp>\n'
+                   f'<StrtNm>DURHAM STREET</StrtNm>\n'
+                   f'<BldgNb>V 101, 1-45</BldgNb>\n'
+                   f'<PstCd>SE11 5JH</PstCd>\n'
+                   f'<TwnNm>LONDON</TwnNm>\n'
+                   f'<CtrySubDvsn>LONDON</CtrySubDvsn>\n'
+                   f'<Ctry>GB</Ctry>\n'
+                   f'<AdrLine>STENN INTERNATIONAL LTD</AdrLine>\n'
+                   f'</PstlAdr>\n'
+                   f'</MsgRcpt>\n'
+                   f'<AddtlInf>INTR</AddtlInf>\n'
+                   f'</GrpHdr>\n'
+                   f'<Rpt>\n'
+                   f'<Id>10929926</Id>\n'
+                   f'<ElctrncSeqNb>016/000</ElctrncSeqNb>\n'
+                   f'<CreDtTm>{date} 10:51:25</CreDtTm>\n'
+                   f'<FrToDt>\n'
+                   f'<FrDtTm>2017-01-09T00:00:00</FrDtTm>\n'
+                   f'<ToDtTm>2017-01-23T06:32:35</ToDtTm>\n'
+                   f'</FrToDt>\n'
+                   f'<RptgSrc>\n'
+                   f'<Cd>ACCT</Cd>\n'
+                   f'</RptgSrc>\n'
+                   f'<Acct>\n'
+                   f'<Id>\n'
+                   f'<Othr>\n'
+                   f'<Id>{bank_account}</Id>\n'
+                   f'<SchmeNm>\n'
+                   f'<Prtry>BARCLAYS</Prtry>\n'
+                   f'</SchmeNm>\n'
+                   f'</Othr>\n'
+                   f'</Id>\n'
+                   f'<Ccy>{currency}</Ccy>\n'
+                   f'<Nm>STENN ASSETS UK LTD</Nm>\n'
+                   f'<Svcr>\n'
+                   f'<FinInstnId>\n'
+                   f'<ClrSysMmbId>\n'
+                   f'<ClrSysId>\n'
+                   f'<Prtry>200000</Prtry>\n'
+                   f'</ClrSysId>\n'
+                   f'<MmbId>Barclays</MmbId>\n'
+                   f'</ClrSysMmbId>\n'
+                   f'<Nm>Barclays UK Currency</Nm>\n'
+                   f'</FinInstnId>\n'
+                   f'</Svcr>\n'
+                   f'</Acct>\n'
+                   f'<Bal>\n'
+                   f'<Tp>\n'
+                   f'<CdOrPrtry>\n'
+                   f'<Cd>ITBD</Cd>\n'
+                   f'</CdOrPrtry>\n'
+                   f'</Tp>\n'
+                   f'<Amt Ccy="{currency}">{amount}</Amt>\n'
+                   f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
+                   f'<Dt>\n'
+                   f'<Dt>{date}</Dt>\n'
+                   f'</Dt>\n'
+                   f'</Bal>\n'
+                   f'<TxsSummry>\n'
+                   f'<TtlNtries>\n'
+                   f'<NbOfNtries>1</NbOfNtries>\n'
+                   f'<Sum>{amount}</Sum>\n'
+                   f'<TtlNetNtryAmt>{amount}</TtlNetNtryAmt>\n'
+                   f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
+                   f'</TtlNtries>\n'
+                   f'<TtlCdtNtries>\n'
+                   f'<NbOfNtries>1</NbOfNtries>\n'
+                   f'<Sum>{amount}</Sum>\n'
+                   f'</TtlCdtNtries>\n'
+                   f'<TtlDbtNtries>\n'
+                   f'<NbOfNtries>0</NbOfNtries>\n'
+                   f'<Sum>0.00</Sum>\n'
+                   f'</TtlDbtNtries>\n'
+                   f'</TxsSummry>\n'
+                   f'<Ntry>\n'
+                   f'<Amt Ccy="{currency}">{amount}</Amt>\n'
+                   f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
+                   f'<RvslInd>False</RvslInd>\n'
+                   f'<Sts>BOOK</Sts>\n'
+                   f'<BookgDt>\n'
+                   f'<Dt>0116</Dt>\n'
+                   f'</BookgDt>\n'
+                   f'<ValDt>\n'
+                   f'<Dt>170113</Dt>\n'
+                   f'</ValDt>\n'
+                   f'<AcctSvcrRef>{acct_svcr_ref}</AcctSvcrRef>\n'
+                   f'<BkTxCd>\n'
+                   f'<Prtry>\n'
+                   f'<Cd>175</Cd>\n'
+                   f'<Issr>BARCLAYS</Issr>\n'
+                   f'</Prtry>\n'
+                   f'</BkTxCd>\n'
+                   f'<NtryDtls>\n'
+                   f'<TxDtls>\n'
+                   f'<Refs>\n'
+                   f'<AcctSvcrRef>{acct_svcr_ref}</AcctSvcrRef>\n'
+                   f'<EndToEndId>CLIENT_REF</EndToEndId>\n'
+                   f'</Refs>\n'
+                   f'</TxDtls>\n'
+                   f'</NtryDtls>\n'
+                   f'<AddtlNtryInf>DESCRIPTION</AddtlNtryInf>\n'
+                   f'</Ntry>\n'
+                   f'</Rpt>\n'
+                   f'</BkToCstmrAcctRptV02>\n'
+                   f'</Document>\n'
+                   )
         file.close()
+        self.label_path.setText("Successfully created!")
+        self.label_path.adjustSize()
 
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
