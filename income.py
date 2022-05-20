@@ -9,6 +9,7 @@
 
 
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QLocale
 from PyQt5.QtGui import QDoubleValidator
 from datetime import date
 from PyQt5.QtWidgets import QFileDialog, QMainWindow
@@ -18,6 +19,7 @@ import uuid
 class Ui_MainWindow(QMainWindow):
     def setupUi(self, MainWindow):
         self.path = ""
+        self.english = QLocale(QLocale.English, QLocale.UnitedKingdom)
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(344, 289)
         self.date = date.today()
@@ -35,7 +37,8 @@ class Ui_MainWindow(QMainWindow):
         self.input_amount = QtWidgets.QLineEdit(self.centralwidget)
         self.input_amount.setGeometry(QtCore.QRect(50, 50, 61, 21))
         self.input_amount.setObjectName("input_amount")
-        self.input_amount.setValidator(QDoubleValidator())
+        self.input_amount.setValidator(QDoubleValidator(0.00, 999999999999.99, 2))
+        self.input_amount.validator().setLocale(self.english)
         self.label_amount = QtWidgets.QLabel(self.centralwidget)
         self.label_amount.setGeometry(QtCore.QRect(60, 30, 47, 13))
         self.label_amount.setObjectName("label_amount")
@@ -80,12 +83,13 @@ class Ui_MainWindow(QMainWindow):
         self.path = QFileDialog.getExistingDirectory(self, "Choose directory", "C:/",
                                                      QFileDialog.ShowDirsOnly
                                                      | QFileDialog.DontResolveSymlinks)
-        self.label_path.setText(f"File will be saved in {self.path}")
-        self.label_path.adjustSize()
+        if self.path != "":
+            self.label_path.setText(f"File will be saved in {self.path}")
+            self.label_path.adjustSize()
 
     def save_file(self):
         acct_svcr_ref = str(uuid.uuid4())
-        amount = self.input_amount.text()
+        amount = self.english.toDouble(self.input_amount.text())[0]
         currency = self.select_currency.currentText()
         date = self.input_date.date().toPyDate()
         if currency == "USD":
@@ -94,125 +98,139 @@ class Ui_MainWindow(QMainWindow):
             bank_account = "43975347"
         elif currency == "EUR":
             bank_account = "52588299"
-        file = open(f"{self.path}/incoming_internal_transfer_{date}_{amount}_{currency}.xml", "w")
-        file.write(f'<?xml version="1.0" encoding="UTF-8"?> \n'
-                   f'<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.052.001.02">\n'
-                   f'<BkToCstmrAcctRptV02>\n'
-                   f'<GrpHdr>\n'
-                   f'<MsgId>10929926</MsgId>\n'
-                   f'<CreDtTm>{date} 10:51:25</CreDtTm>\n'
-                   f'<MsgRcpt>\n'
-                   f'<Nm>STENN INTERNATIONAL LIMITED</Nm>\n'
-                   f'<PstlAdr>\n'
-                   f'<AdrTp>ADDR</AdrTp>\n'
-                   f'<StrtNm>DURHAM STREET</StrtNm>\n'
-                   f'<BldgNb>V 101, 1-45</BldgNb>\n'
-                   f'<PstCd>SE11 5JH</PstCd>\n'
-                   f'<TwnNm>LONDON</TwnNm>\n'
-                   f'<CtrySubDvsn>LONDON</CtrySubDvsn>\n'
-                   f'<Ctry>GB</Ctry>\n'
-                   f'<AdrLine>STENN INTERNATIONAL LTD</AdrLine>\n'
-                   f'</PstlAdr>\n'
-                   f'</MsgRcpt>\n'
-                   f'<AddtlInf>INTR</AddtlInf>\n'
-                   f'</GrpHdr>\n'
-                   f'<Rpt>\n'
-                   f'<Id>10929926</Id>\n'
-                   f'<ElctrncSeqNb>016/000</ElctrncSeqNb>\n'
-                   f'<CreDtTm>{date} 10:51:25</CreDtTm>\n'
-                   f'<FrToDt>\n'
-                   f'<FrDtTm>2017-01-09T00:00:00</FrDtTm>\n'
-                   f'<ToDtTm>2017-01-23T06:32:35</ToDtTm>\n'
-                   f'</FrToDt>\n'
-                   f'<RptgSrc>\n'
-                   f'<Cd>ACCT</Cd>\n'
-                   f'</RptgSrc>\n'
-                   f'<Acct>\n'
-                   f'<Id>\n'
-                   f'<Othr>\n'
-                   f'<Id>{bank_account}</Id>\n'
-                   f'<SchmeNm>\n'
-                   f'<Prtry>BARCLAYS</Prtry>\n'
-                   f'</SchmeNm>\n'
-                   f'</Othr>\n'
-                   f'</Id>\n'
-                   f'<Ccy>{currency}</Ccy>\n'
-                   f'<Nm>STENN ASSETS UK LTD</Nm>\n'
-                   f'<Svcr>\n'
-                   f'<FinInstnId>\n'
-                   f'<ClrSysMmbId>\n'
-                   f'<ClrSysId>\n'
-                   f'<Prtry>200000</Prtry>\n'
-                   f'</ClrSysId>\n'
-                   f'<MmbId>Barclays</MmbId>\n'
-                   f'</ClrSysMmbId>\n'
-                   f'<Nm>Barclays UK Currency</Nm>\n'
-                   f'</FinInstnId>\n'
-                   f'</Svcr>\n'
-                   f'</Acct>\n'
-                   f'<Bal>\n'
-                   f'<Tp>\n'
-                   f'<CdOrPrtry>\n'
-                   f'<Cd>ITBD</Cd>\n'
-                   f'</CdOrPrtry>\n'
-                   f'</Tp>\n'
-                   f'<Amt Ccy="{currency}">{amount}</Amt>\n'
-                   f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
-                   f'<Dt>\n'
-                   f'<Dt>{date}</Dt>\n'
-                   f'</Dt>\n'
-                   f'</Bal>\n'
-                   f'<TxsSummry>\n'
-                   f'<TtlNtries>\n'
-                   f'<NbOfNtries>1</NbOfNtries>\n'
-                   f'<Sum>{amount}</Sum>\n'
-                   f'<TtlNetNtryAmt>{amount}</TtlNetNtryAmt>\n'
-                   f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
-                   f'</TtlNtries>\n'
-                   f'<TtlCdtNtries>\n'
-                   f'<NbOfNtries>1</NbOfNtries>\n'
-                   f'<Sum>{amount}</Sum>\n'
-                   f'</TtlCdtNtries>\n'
-                   f'<TtlDbtNtries>\n'
-                   f'<NbOfNtries>0</NbOfNtries>\n'
-                   f'<Sum>0.00</Sum>\n'
-                   f'</TtlDbtNtries>\n'
-                   f'</TxsSummry>\n'
-                   f'<Ntry>\n'
-                   f'<Amt Ccy="{currency}">{amount}</Amt>\n'
-                   f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
-                   f'<RvslInd>False</RvslInd>\n'
-                   f'<Sts>BOOK</Sts>\n'
-                   f'<BookgDt>\n'
-                   f'<Dt>0116</Dt>\n'
-                   f'</BookgDt>\n'
-                   f'<ValDt>\n'
-                   f'<Dt>170113</Dt>\n'
-                   f'</ValDt>\n'
-                   f'<AcctSvcrRef>{acct_svcr_ref}</AcctSvcrRef>\n'
-                   f'<BkTxCd>\n'
-                   f'<Prtry>\n'
-                   f'<Cd>175</Cd>\n'
-                   f'<Issr>BARCLAYS</Issr>\n'
-                   f'</Prtry>\n'
-                   f'</BkTxCd>\n'
-                   f'<NtryDtls>\n'
-                   f'<TxDtls>\n'
-                   f'<Refs>\n'
-                   f'<AcctSvcrRef>{acct_svcr_ref}</AcctSvcrRef>\n'
-                   f'<EndToEndId>CLIENT_REF</EndToEndId>\n'
-                   f'</Refs>\n'
-                   f'</TxDtls>\n'
-                   f'</NtryDtls>\n'
-                   f'<AddtlNtryInf>DESCRIPTION</AddtlNtryInf>\n'
-                   f'</Ntry>\n'
-                   f'</Rpt>\n'
-                   f'</BkToCstmrAcctRptV02>\n'
-                   f'</Document>\n'
-                   )
-        file.close()
-        self.label_path.setText(f"Successfully created in {self.path}")
-        self.label_path.adjustSize()
+        if amount == 0.0:
+            warning = QtWidgets.QMessageBox()
+            warning.setWindowTitle("Attention!")
+            warning.setText("Amount value is 0.00")
+            warning.setIcon(QtWidgets.QMessageBox.Warning)
+            warning.exec_()
+        elif self.path == "":
+            warning = QtWidgets.QMessageBox()
+            warning.setWindowTitle("Attention!")
+            warning.setText("Please choose directory")
+            warning.setIcon(QtWidgets.QMessageBox.Warning)
+            warning.exec_()
+        else:
+            file_name = f"incoming_internal_transfer_{date}_{amount}_{currency}.xml"
+            file = open(f"{self.path}/{file_name}.xml", "w")
+            file.write(f'<?xml version="1.0" encoding="UTF-8"?> \n'
+                       f'<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.052.001.02">\n'
+                       f'<BkToCstmrAcctRptV02>\n'
+                       f'<GrpHdr>\n'
+                       f'<MsgId>10929926</MsgId>\n'
+                       f'<CreDtTm>{date} 10:51:25</CreDtTm>\n'
+                       f'<MsgRcpt>\n'
+                       f'<Nm>STENN INTERNATIONAL LIMITED</Nm>\n'
+                       f'<PstlAdr>\n'
+                       f'<AdrTp>ADDR</AdrTp>\n'
+                       f'<StrtNm>DURHAM STREET</StrtNm>\n'
+                       f'<BldgNb>V 101, 1-45</BldgNb>\n'
+                       f'<PstCd>SE11 5JH</PstCd>\n'
+                       f'<TwnNm>LONDON</TwnNm>\n'
+                       f'<CtrySubDvsn>LONDON</CtrySubDvsn>\n'
+                       f'<Ctry>GB</Ctry>\n'
+                       f'<AdrLine>STENN INTERNATIONAL LTD</AdrLine>\n'
+                       f'</PstlAdr>\n'
+                       f'</MsgRcpt>\n'
+                       f'<AddtlInf>INTR</AddtlInf>\n'
+                       f'</GrpHdr>\n'
+                       f'<Rpt>\n'
+                       f'<Id>10929926</Id>\n'
+                       f'<ElctrncSeqNb>016/000</ElctrncSeqNb>\n'
+                       f'<CreDtTm>{date} 10:51:25</CreDtTm>\n'
+                       f'<FrToDt>\n'
+                       f'<FrDtTm>2017-01-09T00:00:00</FrDtTm>\n'
+                       f'<ToDtTm>2017-01-23T06:32:35</ToDtTm>\n'
+                       f'</FrToDt>\n'
+                       f'<RptgSrc>\n'
+                       f'<Cd>ACCT</Cd>\n'
+                       f'</RptgSrc>\n'
+                       f'<Acct>\n'
+                       f'<Id>\n'
+                       f'<Othr>\n'
+                       f'<Id>{bank_account}</Id>\n'
+                       f'<SchmeNm>\n'
+                       f'<Prtry>BARCLAYS</Prtry>\n'
+                       f'</SchmeNm>\n'
+                       f'</Othr>\n'
+                       f'</Id>\n'
+                       f'<Ccy>{currency}</Ccy>\n'
+                       f'<Nm>STENN ASSETS UK LTD</Nm>\n'
+                       f'<Svcr>\n'
+                       f'<FinInstnId>\n'
+                       f'<ClrSysMmbId>\n'
+                       f'<ClrSysId>\n'
+                       f'<Prtry>200000</Prtry>\n'
+                       f'</ClrSysId>\n'
+                       f'<MmbId>Barclays</MmbId>\n'
+                       f'</ClrSysMmbId>\n'
+                       f'<Nm>Barclays UK Currency</Nm>\n'
+                       f'</FinInstnId>\n'
+                       f'</Svcr>\n'
+                       f'</Acct>\n'
+                       f'<Bal>\n'
+                       f'<Tp>\n'
+                       f'<CdOrPrtry>\n'
+                       f'<Cd>ITBD</Cd>\n'
+                       f'</CdOrPrtry>\n'
+                       f'</Tp>\n'
+                       f'<Amt Ccy="{currency}">{amount}</Amt>\n'
+                       f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
+                       f'<Dt>\n'
+                       f'<Dt>{date}</Dt>\n'
+                       f'</Dt>\n'
+                       f'</Bal>\n'
+                       f'<TxsSummry>\n'
+                       f'<TtlNtries>\n'
+                       f'<NbOfNtries>1</NbOfNtries>\n'
+                       f'<Sum>{amount}</Sum>\n'
+                       f'<TtlNetNtryAmt>{amount}</TtlNetNtryAmt>\n'
+                       f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
+                       f'</TtlNtries>\n'
+                       f'<TtlCdtNtries>\n'
+                       f'<NbOfNtries>1</NbOfNtries>\n'
+                       f'<Sum>{amount}</Sum>\n'
+                       f'</TtlCdtNtries>\n'
+                       f'<TtlDbtNtries>\n'
+                       f'<NbOfNtries>0</NbOfNtries>\n'
+                       f'<Sum>0.00</Sum>\n'
+                       f'</TtlDbtNtries>\n'
+                       f'</TxsSummry>\n'
+                       f'<Ntry>\n'
+                       f'<Amt Ccy="{currency}">{amount}</Amt>\n'
+                       f'<CdtDbtInd>CRDT</CdtDbtInd>\n'
+                       f'<RvslInd>False</RvslInd>\n'
+                       f'<Sts>BOOK</Sts>\n'
+                       f'<BookgDt>\n'
+                       f'<Dt>0116</Dt>\n'
+                       f'</BookgDt>\n'
+                       f'<ValDt>\n'
+                       f'<Dt>170113</Dt>\n'
+                       f'</ValDt>\n'
+                       f'<AcctSvcrRef>{acct_svcr_ref}</AcctSvcrRef>\n'
+                       f'<BkTxCd>\n'
+                       f'<Prtry>\n'
+                       f'<Cd>175</Cd>\n'
+                       f'<Issr>BARCLAYS</Issr>\n'
+                       f'</Prtry>\n'
+                       f'</BkTxCd>\n'
+                       f'<NtryDtls>\n'
+                       f'<TxDtls>\n'
+                       f'<Refs>\n'
+                       f'<AcctSvcrRef>{acct_svcr_ref}</AcctSvcrRef>\n'
+                       f'<EndToEndId>CLIENT_REF</EndToEndId>\n'
+                       f'</Refs>\n'
+                       f'</TxDtls>\n'
+                       f'</NtryDtls>\n'
+                       f'<AddtlNtryInf>DESCRIPTION</AddtlNtryInf>\n'
+                       f'</Ntry>\n'
+                       f'</Rpt>\n'
+                       f'</BkToCstmrAcctRptV02>\n'
+                       f'</Document>\n'
+                       )
+            file.close()
+            self.label_path.setText(f"Successfully created in {self.path}")
+            self.label_path.adjustSize()
 
 
 if __name__ == "__main__":

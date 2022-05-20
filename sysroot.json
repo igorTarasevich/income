@@ -1,0 +1,26 @@
+{
+  "win#qt5": {
+    "qt_dirpy": "c:\\users\\user\\appdata\\local\\programs\\python\\python39\\lib\\site-packages",
+    "ssl": "openssl-linked",
+    "configure_options": [
+      "-opengl", "desktop", "-no-dbus", "-qt-pcre"
+    ],
+    "static_msvc_runtime": true
+  },
+  "win#python": {
+    "build_host_from_source": false,
+    "build_target_from_source": false,
+    "version": "3.9.0"
+  },
+  "win#sip": {
+    "module_name": "PyQt5.sip",
+    "version": "6.6.1"
+  },
+  "win#pyqt5": {
+    "modules": [
+        "QtCore", "QtGui", "QtNetwork", "QtPrintSupport", "QtWidgets",
+        "QtWinExtras"
+    ],
+    "source": "PyQt5"
+  }
+}
